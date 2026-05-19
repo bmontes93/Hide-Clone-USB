@@ -96,8 +96,7 @@ function Sync-UsbDrive {
         '/NP',
         '/NFL',
         '/NDL',
-        "/LOG:$driveLogFile",
-        '/APPEND'
+        "/LOG+:$driveLogFile"
     )
 
     $startInfo = New-Object System.Diagnostics.ProcessStartInfo
