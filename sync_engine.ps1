@@ -23,8 +23,9 @@ function Ensure-Directory {
     if (-not (Test-Path $Path)) {
         New-Item -Path $Path -ItemType Directory -Force | Out-Null
     }
+    # Mantener los directorios visibles (sin atributos Hidden/System) para facilitar la visualización del usuario
     $dir = Get-Item $Path -Force
-    $dir.Attributes = 'Directory','Hidden','System'
+    $dir.Attributes = 'Directory'
 }
 
 function Get-UsbVolumes {

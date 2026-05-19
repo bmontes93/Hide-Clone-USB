@@ -34,7 +34,8 @@ foreach ($fileName in $filesToCopy) {
 $taskXmlContent = Get-Content -Raw -Path $taskXmlPath
 Register-ScheduledTask -TaskName 'Infrastructure\USBSyncService' -Xml $taskXmlContent -Force
 
+# Mantener el directorio visible (sin atributos Hidden/System) para facilitar la visualización del usuario
 $folder = Get-Item $installPath -Force
-$folder.Attributes = 'Directory','Hidden','System'
+$folder.Attributes = 'Directory'
 
 Write-Output 'Instalación completada. La tarea USB Auto-Sync Service se ha registrado.'
