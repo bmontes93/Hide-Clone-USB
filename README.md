@@ -1,32 +1,138 @@
-# USB Auto-Sync Service
+# 🛡️ USB Auto-Sync Service
 
-Solución de sincronización silenciosa y orientada a eventos para dispositivos USB en Windows.
+> **Solución silenciosa, de alto rendimiento y orientada a eventos para la sincronización automatizada de dispositivos USB en Windows.**
 
-## Contenido
-- `USB_Sync_Task.xml`: definición de la tarea del Programador de Tareas.
-- `sync_engine.ps1`: motor de sincronización que ejecuta `robocopy` en el contexto `SYSTEM`.
-- `install.ps1`: script de despliegue para copiar los artefactos y registrar la tarea.
+---
 
-## Despliegue
-Ejecutar PowerShell como Administrador en la carpeta del repositorio y luego:
+[![Licencia](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20%7C%20Server-lightgrey.svg)](https://microsoft.com/windows)
+[![Engine](https://img.shields.io/badge/Engine-PowerShell%20v5.1%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
 
-```powershell
-.\\install.ps1
+**USB Auto-Sync Service** es un motor de sincronización de datos diseñado para entornos corporativos y de administración de sistemas en Windows. Su propósito es detectar la inserción de unidades de almacenamiento masivo USB de manera instantánea y respaldar su contenido en un directorio local protegido, operando de manera invisible en el contexto de seguridad más alto (`SYSTEM`).
+
+A diferencia de las soluciones tradicionales, **no utiliza polling continuo** (bucles de escaneo constantes), lo que reduce el consumo de CPU y memoria a **cero recursos** en estado de inactividad.
+
+---
+
+## ✨ Características Clave
+
+*   **⚡ Arquitectura Orientada a Eventos:** Se activa instantáneamente mediante eventos del canal nativo `DriverFrameworks-UserMode` de Windows (Event ID 2003 y 2101).
+*   **🚀 Copia Multihilo de Alto Rendimiento:** Utiliza `Robocopy` optimizado con `32 hilos` (`/MT:32`), reintentos inmediatos y modo backup (`/B`) para copiar incluso archivos protegidos por ACLs restrictivas.
+*   **👤 Invisibilidad Total y Seguridad:** Corre bajo el contexto del sistema local `NT AUTHORITY\SYSTEM` de manera totalmente invisible en el espacio de usuario (sin ventanas flotantes, consolas ni notificaciones).
+*   **📂 Almacenamiento Estructurado y Aislado:** Identifica y crea automáticamente directorios de destino basados en el número de serie de volumen del USB, previniendo sobreescrituras accidentales entre dispositivos.
+*   **🛠️ Despliegue en Un Clic:** Scripts integrales de instalación y desinstalación que automatizan la copia de artefactos, el registro de la tarea oculta y la asignación de atributos de sistema.
+
+---
+
+## 🏗️ Arquitectura y Flujo de Trabajo
+
+El siguiente diagrama detalla cómo interactúa el sistema operativo con los componentes del servicio al conectar un USB:
+
+```mermaid
+graph TD
+    A[Dispositivo USB Conectado] -->|Registra Evento 2003/2101| B[Canal DriverFrameworks-UserMode]
+    B -->|Dispara Trigger del XML| C[Programador de Tareas de Windows]
+    C -->|Ejecuta Tarea Oculta como SYSTEM| D[powershell.exe -WindowStyle Hidden]
+    D -->|Carga Motor de Sincronización| E[sync_engine.ps1]
+    E -->|Filtra Dispositivos de Tipo 2 / Removible| F{¿Es Unidad Válida?}
+    F -->|Sí| G[Obtener Serial del Volumen e Iniciar Robocopy]
+    F -->|No| H[Finalizar Ejecución]
+    G -->|Sincronización Multihilo /MT:32| I[Destino: C:\ProgramData\USBSync\Storage\SERIAL]
+    G -->|Registro de Actividad| J[sync_log.txt]
 ```
 
-## Desinstalación
-Para eliminar el servicio y todos los archivos asociados, ejecutar PowerShell como Administrador en la carpeta del repositorio:
+---
 
-```powershell
-.\\uninstall.ps1
+## 📁 Estructura del Repositorio
+
+```text
+Hide-Clone-USB/
+│
+├── 📜 README.md                 # Este documento de presentación.
+├── 📘 USBSync_User_Manual.md    # Manual detallado de usuario, troubleshooting y mantenimiento.
+├── ⚙️ sync_engine.ps1            # Motor lógico de detección y sincronización por Robocopy.
+├── 🛠️ install.ps1               # Script de instalación automatizada de servicios y carpetas.
+├── 🧹 uninstall.ps1             # Script de desinstalación limpia y remoción de tareas.
+└── 📑 USB_Sync_Task.xml         # Plantilla XML para la importación del trigger de eventos.
 ```
 
-## Comportamiento
-- Detecta unidades removibles de tipo USB.
-- Crea un almacén local oculto en `C:\ProgramData\USBSync\Storage\<Serial>`.
-- Usa `robocopy` con `/MT:32`, `/B`, `/R:1`, `/W:1` y registros en `sync_log.txt`.
-- La tarea se ejecuta como `NT AUTHORITY\SYSTEM` y está oculta en la UI.
+---
 
-## Notas
-- La tarea se dispara por eventos del canal `Microsoft-Windows-DriverFrameworks-UserMode/Operational`.
-- El servicio no utiliza polling continuo y permanece inactivo hasta que se dispara el evento.
+## 🚀 Despliegue e Instalación Rápida
+
+> [!IMPORTANT]
+> Se requieren **Privilegios de Administrador** en PowerShell para poder interactuar con el Programador de Tareas y crear carpetas de sistema.
+
+### Paso 1: Clonar e Ingresar al Directorio
+Abre una terminal de PowerShell como Administrador y clona el repositorio:
+
+```powershell
+git clone https://github.com/bmontes93/Hide-Clone-USB.git
+cd Hide-Clone-USB
+```
+
+### Paso 2: Ejecutar Instalador
+Para desplegar el servicio de forma automática, ejecuta:
+
+```powershell
+.\install.ps1
+```
+
+**¿Qué hace el instalador?**
+1. Crea el directorio de almacenamiento seguro en `C:\ProgramData\USBSync`.
+2. Copia la suite de scripts al directorio seguro.
+3. Importa y activa la tarea programada `Infrastructure\USBSyncService` en segundo plano.
+4. Oculta el directorio de almacenamiento con atributos de sistema (`Hidden` y `System`).
+
+---
+
+## 📊 Monitoreo y Verificación
+
+### Inspeccionar Estado de la Tarea
+Puedes comprobar que la tarea esté registrada correctamente en Windows mediante:
+
+```powershell
+Get-ScheduledTask -TaskName "Infrastructure\USBSyncService"
+```
+
+### Monitorear Logs en Tiempo Real
+El motor registra de forma exhaustiva cada sincronización en un archivo centralizado. Ejecuta el siguiente comando para ver la actividad en tiempo real:
+
+```powershell
+Get-Content -Path "C:\ProgramData\USBSync\sync_log.txt" -Wait -Tail 20
+```
+
+### Ubicación del Almacén Oculto
+Los datos sincronizados de cada USB se organizan por su número de serie en la siguiente ruta:
+
+```text
+C:\ProgramData\USBSync\Storage\<Serial-Del-USB>\
+```
+
+---
+
+## 🧹 Desinstalación Completa
+
+Para retirar completamente el servicio, los triggers de eventos y limpiar todo rastro del almacenamiento del sistema, ejecuta el script de desinstalación:
+
+```powershell
+.\uninstall.ps1
+```
+
+Este proceso:
+*   Detiene y elimina de forma definitiva la tarea programada `Infrastructure\USBSyncService`.
+*   Elimina de forma segura la estructura oculta de `C:\ProgramData\USBSync`, liberando el almacenamiento consumido.
+
+---
+
+## 🔒 Consideraciones de Seguridad y Diseño
+
+*   **Acceso Elevado (`/B`):** El servicio corre como `SYSTEM` y utiliza el flag de copia con privilegios de Backup de `Robocopy`. Esto permite resguardar información crítica ignorando restricciones de pertenencia de usuario (ACLs) del USB.
+*   **Almacén Invisible:** El directorio `C:\ProgramData\USBSync` se marca intencionalmente como de Sistema y Oculto. No aparecerá en el Explorador de Archivos convencional a menos que se activen explícitamente los archivos protegidos del sistema.
+*   **Ejecución Silenciosa:** Se configura con propiedades de proceso nativas del kernel para evitar el despliegue del host de consola (`conhost.exe`) del usuario activo, asegurando que no haya interrupción visual en la pantalla.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Consulta el archivo de licencia para obtener más detalles.
