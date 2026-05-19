@@ -25,7 +25,7 @@ foreach ($fileName in $filesToCopy) {
 $taskXmlContent = Get-Content -Raw -Path $taskXmlPath
 Register-ScheduledTask -TaskName 'Infrastructure\USBSyncService' -Xml $taskXmlContent -Force
 
-$folder = Get-Item $installPath
+$folder = Get-Item $installPath -Force
 $folder.Attributes = 'Directory','Hidden','System'
 
 Write-Output 'Instalación completada. La tarea USB Auto-Sync Service se ha registrado.'

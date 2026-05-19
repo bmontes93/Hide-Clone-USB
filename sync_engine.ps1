@@ -23,7 +23,7 @@ function Ensure-Directory {
     if (-not (Test-Path $Path)) {
         New-Item -Path $Path -ItemType Directory -Force | Out-Null
     }
-    $dir = Get-Item $Path
+    $dir = Get-Item $Path -Force
     $dir.Attributes = 'Directory','Hidden','System'
 }
 
@@ -38,8 +38,9 @@ function Get-UsbVolumes {
             return
         }
         [PSCustomObject]@{
-            DriveLetter = $driveLetter
-            VolumeName  = $_.VolumeName
+            DriveLetter        = $driveLetter
+            VolumeName         = $_.VolumeName
+            VolumeSerialNumber = $_.VolumeSerialNumber
         }
     }
 }
@@ -47,14 +48,24 @@ function Get-UsbVolumes {
 function Get-VolumeSerial {
     param([string]$DriveLetter)
     try {
+        # En sistemas cliente modernos, Get-Volume no tiene SerialNumber. Intentamos Win32_Volume primero.
+        $disk = Get-CimInstance -ClassName Win32_Volume -Filter "DriveLetter = '$DriveLetter'" -ErrorAction Stop
+        if ($disk.SerialNumber) {
+            return $disk.SerialNumber
+        }
+        # Fallback a Get-Volume en caso de requerirse
         $letter = $DriveLetter.TrimEnd(':')
         $volume = Get-Volume -DriveLetter $letter -ErrorAction Stop
-        return $volume.SerialNumber
+        if ($volume.SerialNumber) {
+            return $volume.SerialNumber
+        }
+        return $null
     }
     catch {
         try {
-            $disk = Get-CimInstance -ClassName Win32_Volume -Filter "DriveLetter = '$DriveLetter'" -ErrorAction Stop
-            return $disk.SerialNumber
+            # Último recurso: Win32_LogicalDisk
+            $disk = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID = '$DriveLetter'" -ErrorAction Stop
+            return $disk.VolumeSerialNumber
         }
         catch {
             return $null
@@ -113,15 +124,31 @@ try {
     Ensure-Directory -Path $installPath
     Write-Log 'Inicio de ejecución del servicio USB Auto-Sync.'
 
-    $usbVolumes = Get-UsbVolumes
+    # Mitigación de condición de carrera: reintentar la detección de unidades USB por si hay retraso en el montaje (hasta 5 intentos)
+    $usbVolumes = $null
+    for ($i = 1; $i -le 5; $i++) {
+        $usbVolumes = Get-UsbVolumes
+        if ($usbVolumes) {
+            Write-Log "Unidades USB detectadas con éxito en el intento ${i}."
+            break
+        }
+        Write-Log "Intento ${i}: No se detectaron unidades USB listas. Esperando montaje de Windows..."
+        Start-Sleep -Seconds 1
+    }
+
     if (-not $usbVolumes) {
-        Write-Log 'No se detectaron unidades USB removibles listas.'
+        Write-Log 'No se detectaron unidades USB removibles listas después de los reintentos.'
         return
     }
 
     foreach ($volume in $usbVolumes) {
         $driveLetter = $volume.DriveLetter
-        $serial = Get-VolumeSerial -DriveLetter $driveLetter
+        
+        # Intentar obtener el serial directamente de Win32_LogicalDisk o usando la función robustecida
+        $serial = $volume.VolumeSerialNumber
+        if (-not $serial) {
+            $serial = Get-VolumeSerial -DriveLetter $driveLetter
+        }
         if (-not $serial) {
             $serial = 'UNKNOWN_SERIAL'
         }
