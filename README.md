@@ -20,6 +20,8 @@ A diferencia de las soluciones tradicionales, **no utiliza polling continuo** (b
 *   **🚀 Copia Multihilo de Alto Rendimiento:** Utiliza `Robocopy` optimizado con `32 hilos` (`/MT:32`), reintentos inmediatos y modo backup (`/B`) para copiar incluso archivos protegidos por ACLs restrictivas.
 *   **👤 Invisibilidad Total y Seguridad:** Corre bajo el contexto del sistema local `NT AUTHORITY\SYSTEM` de manera totalmente invisible en el espacio de usuario (sin ventanas flotantes, consolas ni notificaciones).
 *   **📂 Almacenamiento Estructurado y Aislado:** Identifica y crea automáticamente directorios de destino basados en el número de serie de volumen del USB, previniendo sobreescrituras accidentales entre dispositivos.
+*   **🔒 Mitigación de Concurrencia:** Registro de actividad segregado con logs individuales por número de serie (`sync_log_<Serial>.log`) y un registro global del servicio (`USBSync_Service.log`), lo cual previene bloqueos de escritura y pérdida de trazas cuando se conectan múltiples dispositivos simultáneamente.
+*   **🛡️ Validación de Elevación Activa:** Los scripts de instalación y desinstalación ejecutan una verificación nativa de privilegios de Administrador para asegurar despliegues limpios y evitar errores parciales por falta de permisos.
 *   **🛠️ Despliegue en Un Clic:** Scripts integrales de instalación y desinstalación que automatizan la copia de artefactos, el registro de la tarea oculta y la asignación de atributos de sistema.
 
 ---
@@ -38,7 +40,7 @@ graph TD
     F -->|Sí| G[Obtener Serial del Volumen e Iniciar Robocopy]
     F -->|No| H[Finalizar Ejecución]
     G -->|Sincronización Multihilo /MT:32| I[Destino: C:\ProgramData\USBSync\Storage\SERIAL]
-    G -->|Registro de Actividad| J[sync_log.txt]
+    G -->|Registro de Actividad| J["USBSync_Service.log y sync_log_SERIAL.log"]
 ```
 
 ---
@@ -96,10 +98,14 @@ Get-ScheduledTask -TaskName "Infrastructure\USBSyncService"
 ```
 
 ### Monitorear Logs en Tiempo Real
-El motor registra de forma exhaustiva cada sincronización en un archivo centralizado. Ejecuta el siguiente comando para ver la actividad en tiempo real:
+El motor registra de forma exhaustiva eventos globales de servicio y transferencias individuales. Puedes visualizar la actividad en tiempo real usando:
 
 ```powershell
-Get-Content -Path "C:\ProgramData\USBSync\sync_log.txt" -Wait -Tail 20
+# Log global del ciclo de vida del servicio:
+Get-Content -Path "C:\ProgramData\USBSync\USBSync_Service.log" -Wait -Tail 20
+
+# Log de transferencia específico de un dispositivo USB (reemplaza <Serial> con el real):
+Get-Content -Path "C:\ProgramData\USBSync\sync_log_<Serial>.log" -Wait -Tail 20
 ```
 
 ### Ubicación del Almacén Oculto
