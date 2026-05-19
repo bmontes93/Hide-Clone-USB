@@ -8,6 +8,15 @@ if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Adm
     exit 1
 }
 
+# Habilitar el canal de eventos DriverFrameworks-UserMode/Operational si está desactivado
+try {
+    wevtutil.exe sl Microsoft-Windows-DriverFrameworks-UserMode/Operational /e:true
+    Write-Output "Canal de eventos 'DriverFrameworks-UserMode/Operational' habilitado con éxito."
+}
+catch {
+    Write-Warning "No se pudo habilitar automáticamente el canal de eventos. Asegúrese de que esté habilitado manualmente."
+}
+
 $installPath = 'C:\ProgramData\USBSync'
 $taskXmlPath = Join-Path $PSScriptRoot 'USB_Sync_Task.xml'
 

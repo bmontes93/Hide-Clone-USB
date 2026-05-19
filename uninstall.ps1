@@ -9,15 +9,19 @@ if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Adm
 }
 
 $installPath = 'C:\ProgramData\USBSync'
-$taskName = 'Infrastructure\USBSyncService'
+$taskName = 'USBSyncService'
 
 try {
-    if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
-        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
-        Write-Output "Tarea programada '$taskName' removida."
+    # Buscar la tarea programada dinámicamente en cualquier ruta
+    $targetTasks = Get-ScheduledTask | Where-Object { $_.TaskName -eq $taskName }
+    if ($targetTasks) {
+        foreach ($task in $targetTasks) {
+            Unregister-ScheduledTask -TaskName $task.TaskName -TaskPath $task.TaskPath -Confirm:$false -ErrorAction Stop
+            Write-Output "Tarea programada '$($task.TaskPath)$($task.TaskName)' removida."
+        }
     }
     else {
-        Write-Output "No se encontró la tarea programada '$taskName'."
+        Write-Output "No se encontró la tarea programada '$taskName' en el sistema."
     }
 
     if (Test-Path $installPath) {
