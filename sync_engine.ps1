@@ -6,13 +6,16 @@
 $ErrorActionPreference = 'Stop'
 
 $installPath = 'C:\ProgramData\USBSync'
-$logFile = Join-Path $installPath 'sync_log.txt'
+$globalLogFile = Join-Path $installPath 'USBSync_Service.log'
 
 function Write-Log {
-    param([string]$Message)
+    param(
+        [string]$Message,
+        [string]$Path = $globalLogFile
+    )
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $entry = "[$timestamp] $Message"
-    Add-Content -Path $logFile -Value $entry
+    Add-Content -Path $Path -Value $entry
 }
 
 function Ensure-Directory {
@@ -62,10 +65,13 @@ function Get-VolumeSerial {
 function Sync-UsbDrive {
     param(
         [string]$DriveLetter,
-        [string]$TargetRoot
+        [string]$TargetRoot,
+        [string]$Serial
     )
 
     Ensure-Directory -Path $TargetRoot
+    
+    $driveLogFile = Join-Path $installPath "sync_log_$Serial.log"
 
     $robocopyArgs = @(
         "$DriveLetter\",
@@ -78,7 +84,7 @@ function Sync-UsbDrive {
         '/NP',
         '/NFL',
         '/NDL',
-        "/LOG:$logFile",
+        "/LOG:$driveLogFile",
         '/APPEND'
     )
 
@@ -123,7 +129,7 @@ try {
         $targetRoot = Join-Path $installPath "Storage\$serial"
 
         Write-Log "Procesando unidad USB $driveLetter con serial $serial"
-        Sync-UsbDrive -DriveLetter $driveLetter -TargetRoot $targetRoot
+        Sync-UsbDrive -DriveLetter $driveLetter -TargetRoot $targetRoot -Serial $serial
     }
 }
 catch {

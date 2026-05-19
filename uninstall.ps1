@@ -2,6 +2,12 @@
     Desinstalador de la solución USB Auto-Sync Service
 #>
 
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Error "Acceso Denegado: Este script requiere ejecutarse en una consola de PowerShell como Administrador."
+    exit 1
+}
+
 $installPath = 'C:\ProgramData\USBSync'
 $taskName = 'Infrastructure\USBSyncService'
 
