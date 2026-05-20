@@ -29,35 +29,23 @@ USB Auto-Sync Service es una solución silenciosa para Windows que detecta autom
 
 ## 3. Estructura de archivos
 La carpeta de trabajo contiene:
+- `Instalar.bat`: lanzador autoelevable para instalar el servicio con doble clic.
+- `Desinstalar.bat`: lanzador autoelevable para desinstalar el servicio con doble clic.
 - `USB_Sync_Task.xml`: definición de la tarea programada basada en eventos.
 - `sync_engine.ps1`: script que detecta unidades USB y ejecuta `robocopy`.
-- `install.ps1`: script de instalación que copia archivos y registra la tarea.
-- `uninstall.ps1`: script de desinstalación que elimina la tarea y la carpeta de instalación.
+- `install.ps1`: script base de instalación que copia archivos y registra la tarea.
+- `uninstall.ps1`: script base de desinstalación que elimina la tarea y la carpeta.
 - `README.md`: descripción breve del proyecto.
 - `USBSync_User_Manual.md`: este manual detallado.
 
 ## 4. Preparación
-1. Abre PowerShell como Administrador.
-2. Navega a la carpeta donde se encuentran los archivos, por ejemplo:
+Simplemente extrae o clona el repositorio en una carpeta de tu preferencia. No es necesario abrir consolas manualmente, ya que los archivos `.bat` se encargarán de la elevación de privilegios.
 
-```powershell
-cd h:\SCRIPTUSB
-```
-
-3. Verifica la existencia de los archivos:
-
-```powershell
-Get-ChildItem
-```
-
-Deberías ver `install.ps1`, `sync_engine.ps1`, `USB_Sync_Task.xml` y `uninstall.ps1`.
+Asegúrate de que la carpeta contiene los archivos `.bat`, `.ps1` y el `.xml`.
 
 ## 5. Instalación paso a paso
-1. Ejecuta el script de instalación:
-
-```powershell
-.\install.ps1
-```
+1. Haz doble clic en el archivo `Instalar.bat`.
+2. Windows te pedirá permisos de Administrador a través de una ventana de Control de Cuentas de Usuario (UAC). Haz clic en **Sí**.
 
 2. El script realiza lo siguiente:
 - Crea `C:\ProgramData\USBSync` si no existe.
@@ -115,13 +103,9 @@ C:\ProgramData\USBSync\sync_engine.ps1
 Esto permite validar que el script y `robocopy` funcionan correctamente.
 
 ## 10. Desinstalación paso a paso
-1. Abre PowerShell como Administrador.
-2. Navega a `h:\SCRIPTUSB`.
-3. Ejecuta:
-
-```powershell
-.\uninstall.ps1
-```
+1. Dirígete a la carpeta donde tienes los archivos de instalación.
+2. Haz doble clic en `Desinstalar.bat`.
+3. Acepta el cuadro de diálogo de UAC para otorgar privilegios de administrador.
 
 4. El script hará:
 - Eliminar la tarea programada `Infrastructure\USBSyncService`.
@@ -163,13 +147,9 @@ Si no retorna nada, la tarea ha sido eliminada.
 
 ## 14. Referencias rápidas de comandos
 - Instalar:
-  ```powershell
-  .\install.ps1
-  ```
+  Doble clic en `Instalar.bat`
 - Desinstalar:
-  ```powershell
-  .\uninstall.ps1
-  ```
+  Doble clic en `Desinstalar.bat`
 - Verificar tarea:
   ```powershell
   Get-ScheduledTask -TaskName 'Infrastructure\USBSyncService'

@@ -52,9 +52,11 @@ Hide-Clone-USB/
 │
 ├── 📜 README.md                 # Este documento de presentación.
 ├── 📘 USBSync_User_Manual.md    # Manual detallado de usuario, troubleshooting y mantenimiento.
+├── 🟢 Instalar.bat              # Lanzador autoelevable para instalar con doble clic.
+├── 🔴 Desinstalar.bat           # Lanzador autoelevable para desinstalar con doble clic.
 ├── ⚙️ sync_engine.ps1            # Motor lógico de detección y sincronización por Robocopy.
-├── 🛠️ install.ps1               # Script de instalación automatizada de servicios y carpetas.
-├── 🧹 uninstall.ps1             # Script de desinstalación limpia y remoción de tareas.
+├── 🛠️ install.ps1               # Script base de instalación automatizada.
+├── 🧹 uninstall.ps1             # Script base de desinstalación limpia.
 └── 📑 USB_Sync_Task.xml         # Plantilla XML para la importación del trigger de eventos.
 ```
 
@@ -62,23 +64,20 @@ Hide-Clone-USB/
 
 ## 🚀 Despliegue e Instalación Rápida
 
-> [!IMPORTANT]
-> Se requieren **Privilegios de Administrador** en PowerShell para poder interactuar con el Programador de Tareas y crear carpetas de sistema.
-
-### Paso 1: Clonar e Ingresar al Directorio
-Abre una terminal de PowerShell como Administrador y clona el repositorio:
+### Paso 1: Obtener el Proyecto
+Clona o descarga el repositorio y extráelo en una carpeta de tu preferencia:
 
 ```powershell
 git clone https://github.com/bmontes93/Hide-Clone-USB.git
 cd Hide-Clone-USB
 ```
 
-### Paso 2: Ejecutar Instalador
-Para desplegar el servicio de forma automática, ejecuta:
+### Paso 2: Ejecutar Instalador (Un solo clic)
+Para desplegar el servicio de forma automática, simplemente **haz doble clic** sobre el archivo:
 
-```powershell
-.\install.ps1
-```
+👉 `Instalar.bat`
+
+*(El script te solicitará permisos de Administrador automáticamente mediante UAC y procederá con la instalación en segundo plano sin que tengas que abrir consolas).*
 
 **¿Qué hace el instalador?**
 1. Crea el directorio de almacenamiento seguro en `C:\ProgramData\USBSync`.
@@ -119,11 +118,11 @@ C:\ProgramData\USBSync\Storage\<Serial-Del-USB>\
 
 ## 🧹 Desinstalación Completa
 
-Para retirar completamente el servicio, los triggers de eventos y limpiar todo rastro del almacenamiento del sistema, ejecuta el script de desinstalación:
+Para retirar completamente el servicio, los triggers de eventos y limpiar todo rastro del almacenamiento del sistema, simplemente **haz doble clic** en el archivo:
 
-```powershell
-.\uninstall.ps1
-```
+👉 `Desinstalar.bat`
+
+*(Se solicitará elevación de UAC automáticamente).*
 
 Este proceso:
 *   Detiene y elimina de forma definitiva la tarea programada `Infrastructure\USBSyncService`.
